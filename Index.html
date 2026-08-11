@@ -1,0 +1,484 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>The Sky of You</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body, html {
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+            background-color: #080711;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            color: #ffffff;
+            user-select: none;
+        }
+
+        /* Ambient colored background glow */
+        .ambient-glow {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            z-index: 0;
+            pointer-events: none;
+            background: 
+                radial-gradient(circle at 20% 30%, rgba(244, 114, 182, 0.12) 0%, transparent 40%),
+                radial-gradient(circle at 80% 70%, rgba(192, 132, 252, 0.12) 0%, transparent 40%),
+                radial-gradient(circle at 50% 50%, rgba(56, 189, 248, 0.08) 0%, transparent 60%);
+            animation: pulseGlow 12s ease-in-out infinite alternate;
+        }
+
+        @keyframes pulseGlow {
+            0% { opacity: 0.7; transform: scale(1); }
+            100% { opacity: 1; transform: scale(1.05); }
+        }
+
+        #canvas-container {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 1;
+        }
+
+        /* Overlay UI */
+        .ui-layer {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 2;
+            pointer-events: none;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            align-items: center;
+            padding: 30px 20px;
+        }
+
+        header {
+            text-align: center;
+            opacity: 0.95;
+            animation: fadeIn 3s ease-in-out;
+            pointer-events: auto;
+        }
+
+        header h1 {
+            font-size: 1.6rem;
+            font-weight: 300;
+            letter-spacing: 5px;
+            color: #f8fafc;
+            text-shadow: 0 0 20px rgba(244, 114, 182, 0.5);
+            margin-bottom: 6px;
+        }
+
+        header p {
+            font-size: 0.85rem;
+            letter-spacing: 2px;
+            color: #cbd5e1;
+            font-weight: 300;
+        }
+
+        /* Audio Control Button */
+        .audio-btn {
+            position: absolute;
+            top: 30px;
+            right: 25px;
+            z-index: 20;
+            pointer-events: auto;
+            background: rgba(255, 255, 255, 0.08);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            color: #f1f5f9;
+            padding: 10px 18px;
+            border-radius: 30px;
+            cursor: pointer;
+            font-size: 0.8rem;
+            letter-spacing: 1.5px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+        }
+
+        .audio-btn:hover {
+            background: rgba(255, 255, 255, 0.18);
+            border-color: rgba(244, 114, 182, 0.5);
+            box-shadow: 0 0 15px rgba(244, 114, 182, 0.3);
+        }
+
+        /* Glassmorphism Card Modal */
+        .card-container {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%) scale(0.85);
+            width: 88%;
+            max-width: 440px;
+            background: rgba(13, 17, 33, 0.82);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.18);
+            border-radius: 24px;
+            padding: 32px 28px;
+            box-shadow: 0 30px 60px rgba(0, 0, 0, 0.6),
+                        0 0 40px rgba(192, 132, 252, 0.2);
+            z-index: 10;
+            opacity: 0;
+            pointer-events: none;
+            transition: all 0.5s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+
+        .card-container.active {
+            opacity: 1;
+            pointer-events: auto;
+            transform: translate(-50%, -50%) scale(1);
+        }
+
+        .card-title {
+            font-size: 0.8rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 3px;
+            color: #c084fc;
+            margin-bottom: 16px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .card-body {
+            font-size: 1.02rem;
+            line-height: 1.75;
+            color: #f1f5f9;
+            font-weight: 300;
+        }
+
+        .card-body strong {
+            color: #f472b6;
+            font-weight: 600;
+        }
+
+        .card-body em {
+            color: #38bdf8;
+            font-style: normal;
+            font-weight: 500;
+        }
+
+        .close-btn {
+            margin-top: 26px;
+            background: linear-gradient(135deg, rgba(192, 132, 252, 0.25), rgba(244, 114, 182, 0.25));
+            border: 1px solid rgba(255, 255, 255, 0.25);
+            color: #ffffff;
+            padding: 12px 24px;
+            border-radius: 30px;
+            cursor: pointer;
+            font-size: 0.85rem;
+            letter-spacing: 1.5px;
+            transition: all 0.3s ease;
+            width: 100%;
+            font-weight: 500;
+        }
+
+        .close-btn:hover {
+            background: linear-gradient(135deg, rgba(192, 132, 252, 0.45), rgba(244, 114, 182, 0.45));
+            box-shadow: 0 0 20px rgba(244, 114, 182, 0.4);
+        }
+
+        .progress-bar {
+            font-size: 0.8rem;
+            color: #94a3b8;
+            letter-spacing: 2.5px;
+            font-weight: 400;
+            background: rgba(255, 255, 255, 0.05);
+            padding: 8px 18px;
+            border-radius: 20px;
+            border: 1px solid rgba(255, 255, 255, 0.08);
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(-10px); }
+            to { opacity: 0.95; transform: translateY(0); }
+        }
+
+        @media (max-width: 480px) {
+            header h1 { font-size: 1.3rem; letter-spacing: 3px; }
+            header p { font-size: 0.75rem; }
+            .audio-btn { top: 20px; right: 15px; padding: 8px 14px; font-size: 0.75rem; }
+            .card-container { padding: 24px 20px; }
+            .card-body { font-size: 0.95rem; line-height: 1.65; }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="ambient-glow"></div>
+
+    <button class="audio-btn" id="audioToggle" onclick="toggleAudio()">
+        <span id="audioIcon">🎵</span> <span id="audioText">MUSIC</span>
+    </button>
+
+    <div id="canvas-container">
+        <canvas id="starCanvas"></canvas>
+    </div>
+
+    <div class="ui-layer">
+        <header>
+            <h1>THE SKY OF YOU</h1>
+            <p>Tap the glowing stars to connect the constellation</p>
+        </header>
+        <div class="progress-bar" id="progressText">0 / 6 STARS UNLOCKED</div>
+    </div>
+
+    <div class="card-container" id="card">
+        <div class="card-title" id="cardTitle">CONSTELLATION MEMORY</div>
+        <div class="card-body" id="cardBody">Memory content goes here...</div>
+        <button class="close-btn" onclick="closeCard()">CONTINUE</button>
+    </div>
+
+    <!-- Soft Ambient Instrumental Track -->
+    <audio id="bgMusic" loop preload="auto">
+        <source src="https://cdn.pixabay.com/download/audio/2022/05/27/audio_1808fbf07a.mp3?filename=soft-piano-100-bpm-121529.mp3" type="audio/mpeg">
+    </audio>
+
+    <script>
+        const canvas = document.getElementById('starCanvas');
+        const ctx = canvas.getContext('2d');
+
+        let width, height;
+        let stars = [];
+        let connections = [];
+        let activeCardIndex = -1;
+
+        // Custom memory nodes tailored to her
+        const memories = [
+            {
+                title: "🌸 THE GARDEN YOU CARRY",
+                text: "The world sees how strong you are—how you stand like a rock for everyone you love, even on days you feel fragile inside. But I see the softness you protect. You love flowers and vibrant colors because that’s what your heart looks like.",
+                color: "#f472b6"
+            },
+            {
+                title: "✨ YOUR OWN LANGUAGE",
+                text: "I love the way you talk. I love that you don't just say 'a lot'—you say <strong>AMOY</strong>. It's my absolute favorite word in the world because it belongs only to you.",
+                color: "#c084fc"
+            },
+            {
+                title: "🥔 ADORABLE ECHOES",
+                text: "The way you pronounce <em>'MAIS'</em> and <em>'POTATOES'</em> instantly brightens my day. You bring a subtle kind of music into ordinary words without even realizing it.",
+                color: "#38bdf8"
+            },
+            {
+                title: "🎈 THE SAFE HAVEN",
+                text: "You carry so much responsibility for everyone around you. But with me, you never have to be strong. I adore the little child hidden inside you that comes out when we're alone—the laughter, the silly moments, the pure lightness.",
+                color: "#fbbf24"
+            },
+            {
+                title: "👁️ THE EYE FOR BEAUTY",
+                text: "You pay attention to the smallest details—things most people walk right past. You notice colors, feeling, and tone. It’s why you're so stunningly gorgeous: your heart notices beauty everywhere.",
+                color: "#4ade80"
+            },
+            {
+                title: "💖 BEYOND DISTANCE",
+                text: "We might be separated by screens, but I don't need physical distance to know how deeply I care about you. I love you <strong>AMOY</strong>.",
+                color: "#f43f5e"
+            }
+        ];
+
+        function initCanvas() {
+            width = canvas.width = window.innerWidth;
+            height = canvas.height = window.innerHeight;
+            createStars();
+        }
+
+        function createStars() {
+            stars = [];
+            const centerX = width / 2;
+            const centerY = height / 2;
+            const radius = Math.min(width, height) * (width < 600 ? 0.35 : 0.28);
+
+            memories.forEach((mem, index) => {
+                const angle = (index / memories.length) * Math.PI * 2 - Math.PI / 2;
+                const x = centerX + Math.cos(angle) * radius + (Math.random() - 0.5) * 30;
+                const y = centerY + Math.sin(angle) * radius + (Math.random() - 0.5) * 30;
+
+                stars.push({
+                    x: x,
+                    y: y,
+                    baseRadius: width < 600 ? 7 : 8,
+                    pulse: Math.random() * Math.PI * 2,
+                    color: mem.color,
+                    memoryIndex: index,
+                    unlocked: false
+                });
+            });
+        }
+
+        function resize() {
+            width = canvas.width = window.innerWidth;
+            height = canvas.height = window.innerHeight;
+            createStars();
+        }
+
+        window.addEventListener('resize', resize);
+
+        // Ambient particles floating background
+        const bgParticles = Array.from({ length: 90 }, () => ({
+            x: Math.random() * window.innerWidth,
+            y: Math.random() * window.innerHeight,
+            size: Math.random() * 1.8 + 0.5,
+            alpha: Math.random() * 0.6 + 0.2,
+            speed: Math.random() * 0.25 + 0.05,
+            color: ['#ffffff', '#f472b6', '#c084fc', '#38bdf8'][Math.floor(Math.random() * 4)]
+        }));
+
+        function draw() {
+            ctx.clearRect(0, 0, width, height);
+
+            // Draw floating ambient particles
+            bgParticles.forEach(p => {
+                p.y -= p.speed;
+                if (p.y < 0) p.y = height;
+                ctx.fillStyle = p.color;
+                ctx.globalAlpha = p.alpha;
+                ctx.beginPath();
+                ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.globalAlpha = 1.0;
+            });
+
+            // Draw Constellation Lines
+            for (let i = 0; i < connections.length; i++) {
+                const startStar = stars[connections[i].from];
+                const endStar = stars[connections[i].to];
+
+                ctx.beginPath();
+                ctx.moveTo(startStar.x, startStar.y);
+                ctx.lineTo(endStar.x, endStar.y);
+                ctx.strokeStyle = 'rgba(192, 132, 252, 0.45)';
+                ctx.lineWidth = 2;
+                ctx.shadowBlur = 12;
+                ctx.shadowColor = '#c084fc';
+                ctx.stroke();
+                ctx.shadowBlur = 0;
+            }
+
+            // Draw Memory Stars
+            stars.forEach((star) => {
+                star.pulse += 0.035;
+                const pulseSize = Math.sin(star.pulse) * 2.5;
+
+                // Outer halo
+                ctx.beginPath();
+                ctx.arc(star.x, star.y, star.baseRadius + 10 + pulseSize, 0, Math.PI * 2);
+                ctx.fillStyle = star.unlocked ? star.color + '33' : 'rgba(255, 255, 255, 0.06)';
+                ctx.fill();
+
+                // Core star
+                ctx.beginPath();
+                ctx.arc(star.x, star.y, star.baseRadius + (star.unlocked ? 2 : 0), 0, Math.PI * 2);
+                ctx.fillStyle = star.unlocked ? star.color : '#ffffff';
+                ctx.shadowBlur = star.unlocked ? 18 : 8;
+                ctx.shadowColor = star.color;
+                ctx.fill();
+                ctx.shadowBlur = 0;
+            });
+
+            requestAnimationFrame(draw);
+        }
+
+        // Click / Touch Event Handlers
+        function handleInteraction(clientX, clientY) {
+            const rect = canvas.getBoundingClientRect();
+            const mouseX = clientX - rect.left;
+            const mouseY = clientY - rect.top;
+
+            stars.forEach((star, index) => {
+                const dist = Math.hypot(star.x - mouseX, star.y - mouseY);
+                if (dist < 32) { // Generous hit area for mobile touches
+                    openCard(index);
+                }
+            });
+        }
+
+        canvas.addEventListener('click', (e) => handleInteraction(e.clientX, e.clientY));
+        canvas.addEventListener('touchstart', (e) => {
+            if (e.touches.length > 0) {
+                handleInteraction(e.touches[0].clientX, e.touches[0].clientY);
+            }
+        }, { passive: true });
+
+        function openCard(index) {
+            activeCardIndex = index;
+            const mem = memories[index];
+            const star = stars[index];
+
+            document.getElementById('cardTitle').innerText = mem.title;
+            document.getElementById('cardTitle').style.color = mem.color;
+            document.getElementById('cardBody').innerHTML = mem.text;
+            document.getElementById('card').classList.add('active');
+
+            // Autoplay music on first star interaction if audio isn't playing yet
+            const music = document.getElementById('bgMusic');
+            if (music.paused) {
+                music.play().then(() => {
+                    document.getElementById('audioText').innerText = "PAUSE";
+                }).catch(() => {});
+            }
+
+            if (!star.unlocked) {
+                star.unlocked = true;
+                
+                const unlockedIndices = stars.map((s, i) => s.unlocked ? i : -1).filter(i => i !== -1);
+                if (unlockedIndices.length > 1) {
+                    const prevIndex = unlockedIndices[unlockedIndices.length - 2];
+                    connections.push({ from: prevIndex, to: index });
+                }
+
+                updateProgress();
+            }
+        }
+
+        function closeCard() {
+            document.getElementById('card').classList.remove('active');
+        }
+
+        function updateProgress() {
+            const unlockedCount = stars.filter(s => s.unlocked).length;
+            document.getElementById('progressText').innerText = `${unlockedCount} / ${stars.length} STARS UNLOCKED`;
+            
+            if (unlockedCount === stars.length && connections.length < stars.length) {
+                const firstUnlocked = stars.findIndex(s => s.unlocked);
+                connections.push({ from: activeCardIndex, to: firstUnlocked });
+            }
+        }
+
+        // Music toggle
+        function toggleAudio() {
+            const music = document.getElementById('bgMusic');
+            const text = document.getElementById('audioText');
+
+            if (music.paused) {
+                music.play();
+                text.innerText = "PAUSE";
+            } else {
+                music.pause();
+                text.innerText = "MUSIC";
+            }
+        }
+
+        initCanvas();
+        draw();
+    </script>
+</body>
+</html>
